@@ -95,7 +95,7 @@ def update(frameNum, img, grid, N):
     return (img,)
 
 
-@profile
+# @profile
 def update_(grid, N):
     # copy grid since we require 8 neighbors for calculation
     # and we go line by line
