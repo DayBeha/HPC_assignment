@@ -1,7 +1,7 @@
 #cython: language_level=3
 
-import numpy as np
-cimport numpy as np
+# import numpy as np
+# cimport numpy as np
 
 def copy(float[:] a, float[:] b):
     # cdef float[:] c = np.empty(len(a), dtype=np.float32)

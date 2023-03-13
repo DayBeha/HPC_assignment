@@ -100,8 +100,44 @@ def update_(grid, N):
     # copy grid since we require 8 neighbors for calculation
     # and we go line by line
     newGrid = grid.copy()
+    for i in range(N):
+        for j in range(N):
+            # compute 8-neghbor sum
+            # using toroidal boundary conditions - x and y wrap around
+            # so that the simulaton takes place on a toroidal surface.
+            total = int(
+                (
+                        grid[i, (j - 1) % N]
+                        + grid[i, (j + 1) % N]
+                        + grid[(i - 1) % N, j]
+                        + grid[(i + 1) % N, j]
+                        + grid[(i - 1) % N, (j - 1) % N]
+                        + grid[(i - 1) % N, (j + 1) % N]
+                        + grid[(i + 1) % N, (j - 1) % N]
+                        + grid[(i + 1) % N, (j + 1) % N]
+                )
+                / 255
+            )
+            # apply Conway's rules
+            if grid[i, j] == ON:
+                if (total < 2) or (total > 3):
+                    newGrid[i, j] = OFF
+            else:
+                if total == 3:
+                    newGrid[i, j] = ON
+    return newGrid
+
+
+
+# @profile
+def update_opt(grid, N):
+    """optimized function"""
+    # copy grid since we require 8 neighbors for calculation
+    # and we go line by line
+    newGrid = grid.copy()
     totals = np.zeros_like(grid)
 
+    # consider first and last row/col
     for i in range(N):
         for j in range(N):
             if i in [0, N - 1] and j in [0, N - 1]:
@@ -109,6 +145,8 @@ def update_(grid, N):
                                     grid[(i - 1) % N, j] + grid[(i + 1) % N, j] +
                                     grid[(i - 1) % N, (j - 1) % N] + grid[(i - 1) % N, (j + 1) % N] +
                                     grid[(i + 1) % N, (j - 1) % N] + grid[(i + 1) % N, (j + 1) % N]) / 255)
+
+    # compute as matrix
     totals[1:-1, 1:-1] += ((grid[:-2, :-2] + grid[:-2, 1:-1] + grid[:-2, 2:] +
                           grid[1:-1, :-2]              + grid[1:-1, 2:] +
                           grid[2:, :-2] + grid[2:, 1:-1] + grid[2:, 2:])/255).astype(np.int32)
@@ -138,8 +176,7 @@ def main():
     # # set grid size
     # N = 100
     for N in grid_sizes:
-        # print(f"N:{N}")
-        t = timer()
+        print(f"N:{N}")
         if args.N and int(args.N) > 8:
             N = int(args.N)
 
@@ -154,8 +191,14 @@ def main():
             # populate grid with random on/off - more off than on
             grid = randomGrid(N)
 
+        t = timer()
         for i in range(10):
             grid = update_(grid, N)
+        times.append(timer() - t)
+
+        t = timer()
+        for i in range(10):
+            grid = update_opt(grid, N)
         times.append(timer() - t)
 
 
@@ -165,8 +208,10 @@ if __name__ == "__main__":
     times = []
     main()
 
-    # plt.plot(range(len(grid_sizes)), times)
-    # plt.xticks(range(len(grid_sizes)), labels=grid_sizes)
-    # plt.xlabel("Grid Size(N)")
-    # plt.ylabel("Time Usgae(s)")
-    # plt.show()
+    plt.plot(range(len(grid_sizes)), times[::2], label='before optim')
+    plt.plot(range(len(grid_sizes)), times[1::2], label='after optim')
+    plt.xticks(range(len(grid_sizes)), labels=grid_sizes)
+    plt.xlabel("Grid Size(N)")
+    plt.ylabel("Time Usgae(s)")
+    plt.legend()
+    plt.show()
